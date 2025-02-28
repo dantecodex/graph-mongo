@@ -51,71 +51,83 @@ const resolvers = {
                 const productLimit = Math.max(1, limit);
 
                 const topProducts = await Order.aggregate([
-                    { $unwind: "$products" },
+                    // Step 1: Parse the "products" string into an array
+                    {
+                        $addFields: {
+                            parsedProducts: {
+                                $function: {
+                                    body: function (productsStr) {
+                                        const jsonStr = productsStr.replace(/'/g, '"');
+                                        return JSON.parse(jsonStr);
+                                    },
+                                    args: ["$products"],
+                                    lang: "js",
+                                },
+                            },
+                        },
+                    },
+                    // Step 2: Unwind the parsed array
+                    { $unwind: "$parsedProducts" },
+                    // Step 3: Group by productId (now valid)
                     {
                         $group: {
-                            _id: "$products.productId",
-                            totalSold: { $sum: "$products.quantity" }
-                        }
+                            _id: "$parsedProducts.productId",
+                            totalSold: { $sum: "$parsedProducts.quantity" },
+                        },
                     },
+                    // Step 4: Sort and limit
                     { $sort: { totalSold: -1 } },
                     { $limit: productLimit },
+                    // Step 5: Lookup product details with type conversion
                     {
                         $lookup: {
                             from: "products",
-                            let: { productId: "$_id" },
+                            let: { productId: "$_id" }, // productId (string)
                             pipeline: [
                                 {
                                     $match: {
                                         $expr: {
                                             $eq: [
-                                                { $toString: "$_id" },
-                                                "$$productId"
-                                            ]
-                                        }
-                                    }
-                                }
+                                                { $toString: "$_id" }, // Convert Product._id to string
+                                                "$$productId",
+                                            ],
+                                        },
+                                    },
+                                },
                             ],
-                            as: "productDetails"
-                        }
+                            as: "productDetails",
+                        },
                     },
+                    // Step 6: Unwind and project results
                     { $unwind: "$productDetails" },
                     {
                         $project: {
                             productId: "$_id",
                             name: "$productDetails.name",
                             totalSold: 1,
-                            _id: 0
-                        }
-                    }
+                            _id: 0,
+                        },
+                    },
                 ]);
 
                 return topProducts;
             } catch (error) {
-                console.error('Error in getTopSellingProducts:', error);
-                throw new Error('Failed to retrieve top selling products');
+                console.error("Error in getTopSellingProducts:", error);
+                throw new Error("Failed to retrieve top selling products");
             }
         },
 
         // 3. Get sales analytics for date range
         getSalesAnalytics: async (_, { startDate, endDate }) => {
             try {
-                // Validate date formats
-                if (!validateDateFormat(startDate) || !validateDateFormat(endDate)) {
-                    throw new Error('Invalid date format. Use ISO format (YYYY-MM-DD)');
-                }
-
-                const start = new Date(startDate);
-                const end = new Date(endDate);
-
-                // Set end date to end of day
-                end.setHours(23, 59, 59, 999);
-
                 // Get total revenue and completed orders count
                 const revenueData = await Order.aggregate([
                     {
                         $match: {
-                            orderDate: { $gte: start, $lte: end },
+                            orderDate: {
+                                $gte: startDate,
+                                $lte: endDate
+                            },
                             status: "completed"
                         }
                     },
@@ -125,64 +137,97 @@ const resolvers = {
                             totalRevenue: { $sum: "$totalAmount" },
                             completedOrders: { $sum: 1 }
                         }
-                    },
-                    {
-                        $project: {
-                            _id: 0,
-                            totalRevenue: 1,
-                            completedOrders: 1
-                        }
                     }
                 ]);
 
-                // Get revenue breakdown by category
+                console.log('Step 1 - Found completed orders:', revenueData);
+
+                // Get category breakdown with modified pipeline
+
                 const categoryBreakdown = await Order.aggregate([
                     // Match orders in date range with completed status
                     {
                         $match: {
-                            orderDate: { $gte: start, $lte: end },
-                            status: "completed"
-                        }
+                            orderDate: { $gte: startDate, $lte: endDate },
+                            status: "completed",
+                        },
                     },
-                    // Unwind products array
-                    { $unwind: "$products" },
-                    // Calculate revenue per product item
+                    // Parse the products string into an array of objects
                     {
-                        $project: {
-                            productId: "$products.productId",
-                            itemRevenue: { $multiply: ["$products.quantity", "$products.priceAtPurchase"] }
-                        }
+                        $addFields: {
+                            parsedProducts: {
+                                $function: {
+                                    body: function (productsStr) {
+                                        const jsonStr = productsStr.replace(/'/g, '"');
+                                        return JSON.parse(jsonStr);
+                                    },
+                                    args: ["$products"],
+                                    lang: "js",
+                                },
+                            },
+                        },
                     },
-                    // Lookup product details to get category
+                    // Unwind the parsed products array
+                    { $unwind: "$parsedProducts" },
+                    // Lookup product details with type conversion
                     {
                         $lookup: {
                             from: "products",
-                            localField: "productId",
-                            foreignField: "_id",
-                            as: "productDetails"
-                        }
+                            let: { prodId: "$parsedProducts.productId" },
+                            pipeline: [
+                                {
+                                    $match: {
+                                        $expr: {
+                                            $eq: [
+                                                { $toString: "$_id" }, // Convert Product _id to string
+                                                "$$prodId", // productId from Order (string)
+                                            ],
+                                        },
+                                    },
+                                },
+                            ],
+                            as: "productInfo",
+                        },
                     },
-                    { $unwind: "$productDetails" },
-                    // Group by category and sum revenue
+                    // Unwind product info to access individual product details
+                    { $unwind: "$productInfo" },
+                    // Group by category to sum revenue
                     {
                         $group: {
-                            _id: "$productDetails.category",
-                            revenue: { $sum: "$itemRevenue" }
-                        }
+                            _id: "$productInfo.category",
+                            revenue: {
+                                $sum: {
+                                    $multiply: [
+                                        "$parsedProducts.quantity",
+                                        "$parsedProducts.priceAtPurchase",
+                                    ],
+                                },
+                            },
+                        },
                     },
-                    // Format result
+                    // Format output
                     {
                         $project: {
                             category: "$_id",
-                            revenue: 1,
-                            _id: 0
-                        }
+                            revenue: { $round: ["$revenue", 2] },
+                            _id: 0,
+                        },
                     },
-                    // Sort by revenue in descending order
-                    { $sort: { revenue: -1 } }
+                    // Sort by descending revenue
+                    { $sort: { revenue: -1 } },
                 ]);
+                console.log('Step 2 - Category breakdown:', categoryBreakdown);
 
-                // Build final result
+                // For debugging, let's also get a sample of matched orders
+                const sampleOrder = await Order.findOne({
+                    orderDate: {
+                        $gte: startDate,
+                        $lte: endDate
+                    },
+                    status: "completed"
+                });
+                console.log('Step 3 - Sample completed order:', sampleOrder);
+
                 return {
                     totalRevenue: revenueData.length ? revenueData[0].totalRevenue : 0,
                     completedOrders: revenueData.length ? revenueData[0].completedOrders : 0,
@@ -191,6 +236,51 @@ const resolvers = {
             } catch (error) {
                 console.error('Error in getSalesAnalytics:', error);
                 throw new Error('Failed to retrieve sales analytics');
+            }
+        },
+
+        getCustomerOrders: async (_, { customerId, page, limit }) => {
+            try {
+                // Validate input
+                if (page < 1 || limit < 1) {
+                    throw new Error("Page and limit must be at least 1");
+                }
+
+                // Count total orders for the customer
+                const totalOrders = await Order.countDocuments({
+                    $expr: { $eq: [{ $toString: "$customerId" }, customerId] }
+                });
+
+                // Calculate total pages
+                const totalPages = Math.ceil(totalOrders / limit);
+
+                // Fetch paginated orders
+                const orders = await Order.find({
+                    $expr: { $eq: [{ $toString: "$customerId" }, customerId] }
+                })
+                    .sort({ orderDate: -1 }) // Latest orders first
+                    .skip((page - 1) * limit)
+                    .limit(limit)
+                    .lean();
+
+                // Parse the products field (string → array)
+                const parsedOrders = orders.map((order) => {
+                    try {
+                        const products = JSON.parse(order.products.replace(/'/g, '"'));
+                        return { ...order, products };
+                    } catch (error) {
+                        throw new Error(`Failed to parse products for order ${order._id}`);
+                    }
+                });
+
+                return {
+                    orders: parsedOrders,
+                    totalPages,
+                    currentPage: page,
+                };
+            } catch (error) {
+                console.error("Error in getCustomerOrders:", error);
+                throw new Error("Failed to fetch customer orders");
             }
         },
 

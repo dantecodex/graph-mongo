@@ -58,12 +58,20 @@ const typeDefs = gql`
     completedOrders: Int!
     categoryBreakdown: [CategoryBreakdown!]!
   }
+
+  type CustomerOrdersResponse {
+  orders: [Order!]!
+  totalPages: Int!
+  currentPage: Int!
+}
   
   # Queries
   type Query {
     getCustomerSpending(customerId: ID!): CustomerSpending
     getTopSellingProducts(limit: Int!): [TopProduct]
     getSalesAnalytics(startDate: String!, endDate: String!): SalesAnalytics
+    getCustomerOrders(customerId: ID!, page: Int!, limit: Int!): CustomerOrdersResponse
+
     
     # Additional queries for testing and development
     getCustomer(id: ID!): Customer
