@@ -1,0 +1,30 @@
+{
+  "name": "sales-analytics-api",
+  "version": "1.0.0",
+  "description": "GraphQL API for sales and revenue analytics",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "seed": "node src/db/seedData.js"
+  },
+  "keywords": [
+    "mongodb",
+    "graphql",
+    "nodejs",
+    "analytics"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-server-express": "^3.12.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "graphql": "^16.8.1",
+    "mongoose": "^7.6.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
