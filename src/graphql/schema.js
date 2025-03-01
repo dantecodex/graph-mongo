@@ -73,7 +73,7 @@ const typeDefs = gql`
     getCustomerOrders(customerId: ID!, page: Int!, limit: Int!): CustomerOrdersResponse
 
     
-    # Additional queries for testing and development
+    # Additional queries for testing
     getCustomer(id: ID!): Customer
     getProduct(id: ID!): Product
     getOrder(id: ID!): Order

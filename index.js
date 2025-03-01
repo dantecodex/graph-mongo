@@ -4,20 +4,14 @@ import dotenv from 'dotenv';
 import connectDB from './src/db/connection.js';
 import typeDefs from './src/graphql/schema.js';
 import resolvers from './src/graphql/resolvers.js';
-
-// Load environment variables
 dotenv.config();
 
 const PORT = process.env.PORT || 4000;
-
-// Initialize Express
 const app = express();
 
 async function startServer() {
-    // Connect to MongoDB
     await connectDB();
 
-    // Initialize Apollo Server
     const server = new ApolloServer({
         typeDefs,
         resolvers,
@@ -32,10 +26,8 @@ async function startServer() {
 
     await server.start();
 
-    // Apply Apollo middleware to Express
     server.applyMiddleware({ app });
 
-    // Start the server
     app.listen(PORT, () => {
         console.log(`Server running at http://localhost:${PORT}${server.graphqlPath}`);
     });

@@ -23,9 +23,7 @@ const productSchema = new mongoose.Schema({
     }
 }, { _id: false });
 
-// Create index on _id for faster lookups
 productSchema.index({ _id: 1 });
-// Create index on category for analytics queries
 productSchema.index({ category: 1 });
 
 const Product = mongoose.model('Product', productSchema);

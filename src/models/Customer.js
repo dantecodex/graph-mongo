@@ -27,7 +27,6 @@ const customerSchema = new mongoose.Schema({
     }
 }, { _id: false });
 
-// Create index on _id for faster lookups
 customerSchema.index({ _id: 1 });
 
 const Customer = mongoose.model('Customer', customerSchema);

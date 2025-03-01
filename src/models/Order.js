@@ -44,7 +44,6 @@ const orderSchema = new mongoose.Schema({
     }
 }, { _id: false });
 
-// Create indices for common queries
 orderSchema.index({ customerId: 1 });
 orderSchema.index({ orderDate: 1 });
 orderSchema.index({ status: 1 });
