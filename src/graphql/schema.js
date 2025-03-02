@@ -71,15 +71,6 @@ const typeDefs = gql`
     getTopSellingProducts(limit: Int!): [TopProduct]
     getSalesAnalytics(startDate: String!, endDate: String!): SalesAnalytics
     getCustomerOrders(customerId: ID!, page: Int!, limit: Int!): CustomerOrdersResponse
-
-    
-    # Additional queries for testing
-    getCustomer(id: ID!): Customer
-    getProduct(id: ID!): Product
-    getOrder(id: ID!): Order
-    getAllCustomers: [Customer]
-    getAllProducts: [Product]
-    getAllOrders: [Order]
   }
 `;
 

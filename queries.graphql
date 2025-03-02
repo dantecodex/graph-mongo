@@ -9,9 +9,9 @@ query GetCustomerSpending($customerId: ID!) {
 }
 
 # Variables for Query 1
-{
-  "customerId": "7895595e-7f25-47fe-a6f8-94b31bfab736"
-}
+# {
+#   "customerId": "7895595e-7f25-47fe-a6f8-94b31bfab736"
+# }
 
 # Query 2: Get Top Selling Products
 query GetTopSellingProducts($limit: Int!) {
@@ -23,9 +23,9 @@ query GetTopSellingProducts($limit: Int!) {
 }
 
 # Variables for Query 2
-{
-  "limit": 5
-}
+# {
+#   "limit": 5
+# }
 
 # Query 3: Get Sales Analytics
 query GetSalesAnalytics($startDate: String!, $endDate: String!) {
@@ -40,65 +40,34 @@ query GetSalesAnalytics($startDate: String!, $endDate: String!) {
 }
 
 # Variables for Query 3
-{
-  "startDate": "2024-12-01",
-  "endDate": "2025-02-28"
-}
+# {
+#   "startDate": "2024-12-01",
+#   "endDate": "2025-02-28"
+# }
 
-# Additional Queries for Testing and Development
-
-# Get all customers
-query GetAllCustomers {
-  getAllCustomers {
-    _id
-    name
-    email
-    age
-    location
-    gender
-  }
-}
-
-# Get all products
-query GetAllProducts {
-  getAllProducts {
-    _id
-    name
-    category
-    price
-    stock
-  }
-}
-
-# Get all orders
-query GetAllOrders {
-  getAllOrders {
-    _id
-    customerId
-    products {
-      productId
-      quantity
-      priceAtPurchase
+# Query 4: Get Customer Orders
+query GetCustomerOrders($customerId: ID!, $page: Int!, $limit: Int!) {
+  getCustomerOrders(customerId: $customerId, page: $page, limit: $limit) {
+    orders {
+      _id
+      customerId
+      products {
+        productId
+        quantity
+        priceAtPurchase
+      }
+      totalAmount
+      orderDate
+      status
     }
-    totalAmount
-    orderDate
-    status
+    totalPages
+    currentPage
   }
 }
 
-# Get individual customer
-query GetCustomer($id: ID!) {
-  getCustomer(id: $id) {
-    _id
-    name
-    email
-    age
-    location
-    gender
-  }
-}
-
-# Variables for GetCustomer
-{
-  "id": "7895595e-7f25-47fe-a6f8-94b31bfab736"
-}
+# Variables for Query 4
+# {
+#   "customerId": "7895595e-7f25-47fe-a6f8-94b31bfab736",
+#   "page": 1,
+#   "limit": 1
+# }
