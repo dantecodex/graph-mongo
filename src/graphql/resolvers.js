@@ -1,7 +1,6 @@
 import Customer from '../models/Customer.js';
 import Product from '../models/Product.js';
 import Order from '../models/Order.js';
-import { validateDateFormat } from '../utils/dateUtils.js';
 
 const resolvers = {
     Query: {
