@@ -41,7 +41,6 @@ const resolvers = {
             }
         },
 
-        // 2. Get top selling products
         getTopSellingProducts: async (_, { limit }) => {
             try {
                 const productLimit = Math.max(1, limit);
