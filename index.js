@@ -6,7 +6,7 @@ import typeDefs from './src/graphql/schema.js';
 import resolvers from './src/graphql/resolvers.js';
 dotenv.config();
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 const app = express();
 
 async function startServer() {
